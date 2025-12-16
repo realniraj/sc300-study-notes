@@ -280,8 +280,11 @@ This section focuses on the Role-Based Access Control (RBAC) model within Micros
 
 ## Module 2: External Identities & Hybrid Identity
 
+This module explores how to securely collaborate with external users (partners, customers) using Azure AD B2B and B2C. It also covers the implementation of hybrid identity solutions, synchronizing on-premises Active Directory with Microsoft Entra ID using Azure AD Connect to provide a seamless single sign-on experience.
 
 ### 2.1 External Collaboration (B2B & B2C)
+
+This section details the mechanisms for enabling secure collaboration with external parties. It covers Azure AD Business-to-Business (B2B) for partner collaboration and Azure AD Business-to-Consumer (B2C) for customer-facing identity management, including configuration settings and user lifecycle management.
 
 ---
 
@@ -293,6 +296,11 @@ This section focuses on the Role-Based Access Control (RBAC) model within Micros
 #### 2.1.6 B2C Social Media Users
 
 ### 2.2 Hybrid Identity
+
+This section focuses on integrating on-premises Active Directory environments with Microsoft Entra ID. You will explore the concepts of hybrid identity, including directory synchronization using Azure AD Connect, and the various authentication methods available to provide a seamless single sign-on experience for users across on-premises and cloud resources.
+
+---
+
 #### 2.2.1 Introduction to Hybrid Identity
 #### 2.2.2 Setup Azure AD Connect
 
