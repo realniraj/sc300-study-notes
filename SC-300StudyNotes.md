@@ -406,7 +406,71 @@ This section focuses on integrating on-premises Active Directory environments wi
 ---
 
 #### 2.2.1 Introduction to Hybrid Identity
+
+*   **Concept:**
+    *   **Hybrid Identity:** The integration of on-premises identity infrastructure (Windows Server Active Directory) with Microsoft Entra ID (cloud).
+    *   **Goal:** Provide a common user identity for authentication and authorization to all resources, regardless of location (on-premises or cloud).
+*   **Azure AD Connect:**
+    *   **Role:** The bridge between on-premises AD and Azure AD. It is an agent installed on a Windows Server in the local network.
+    *   **Function:** Synchronizes identity objects (Users, Groups, Contacts) from on-premises AD to Azure AD.
+    *   **Direction:** On-premises AD is the **Source of Authority** (Master). Changes made on-premises are pushed to the cloud during synchronization cycles (default every 30 minutes).
+    *   **Source Anchor:** An immutable attribute (e.g., `mS-DS-ConsistencyGuid` or `objectGUID`) used to uniquely identify and link an object between the two directories.
+*   **Prerequisites:**
+    *   **Routable Domain:** The on-premises User Principal Name (UPN) suffix (e.g., `@contoso.com`) should match a verified custom domain in Azure AD. If it uses a non-routable domain (e.g., `.local`), users will sync as `@tenant.onmicrosoft.com`.
+*   **Authentication Methods:**
+    1.  **Password Hash Synchronization (PHS):**
+        *   **Mechanism:** Synchronizes a hash of the user's on-premises password hash to Azure AD.
+        *   **Auth Location:** Authentication happens entirely in the **Cloud**.
+        *   **Pros:** Simplest to deploy, high availability (not dependent on on-prem uptime for auth), supports leaked credential detection.
+        *   **Default:** This is the default method.
+    2.  **Pass-Through Authentication (PTA):**
+        *   **Mechanism:** Validates passwords against the on-premises Active Directory via a lightweight agent installed on-premises.
+        *   **Auth Location:** Authentication happens **On-Premises**.
+        *   **Pros:** Enforces on-premises account policies (e.g., logon hours) immediately.
+        *   **Cons:** Dependent on on-premises infrastructure availability.
+    3.  **Federation (AD FS):**
+        *   **Mechanism:** Redirects authentication to a separate federation server (e.g., AD FS) or third-party provider (e.g., PingFederate).
+        *   **Auth Location:** Authentication happens on the **Federation Server**.
+        *   **Pros:** Supports advanced scenarios like smart card auth, third-party MFA integration, or complex conditional access policies not supported natively.
+        *   **Cons:** High complexity and infrastructure maintenance.
+*   **Seamless Single Sign-On (Seamless SSO):**
+    *   Automatically signs users in when they are on their corporate devices connected to the corporate network.
+    *   Can be enabled with PHS or PTA.
+*   **Monitoring & Health:**
+    *   **Azure AD Connect Health:** A robust monitoring tool to view the health of the sync engine and federation infrastructure (AD FS).
+    *   **Alerts:** Notifies admins of sync errors or infrastructure downtime.
+    *   **Licensing:** Basic sync is free, but advanced monitoring (Connect Health) often requires **Azure AD Premium P1**.
+*   **Troubleshooting Synchronization:**
+    *   **Common Errors:**
+        *   **Duplicate Attributes:** `UserPrincipalName` or `ProxyAddresses` must be unique across the entire tenant. If a synced user conflicts with an existing cloud user, a sync error occurs.
+        *   **Data Validation:** Ensure on-premises data meets Azure AD complexity and formatting requirements.
+
 #### 2.2.2 Setup Azure AD Connect
+
+*   **Objective:** Install and configure the Azure AD Connect agent on a Windows Server to synchronize on-premises identities to the cloud.
+*   **Prerequisites:**
+    *   **Server:** A domain-joined Windows Server (standard or datacenter).
+    *   **Credentials:**
+        *   **Azure AD:** Global Administrator or Hybrid Identity Administrator.
+        *   **On-Premises:** Enterprise Administrator (for creating the AD account used by the service).
+*   **Installation Steps (Express vs. Custom):**
+    *   *The transcript follows a custom path to demonstrate filtering.*
+    1.  **Connect to Azure AD:** Launch the installer and sign in with your Azure AD Global Admin credentials.
+    2.  **Connect to Directories:** Enter the credentials for the on-premises Active Directory Forest.
+    3.  **Domain and OU Filtering:**
+        *   **Domains:** Select the verified domains to sync.
+        *   **Filtering:** You can choose to sync specific Organizational Units (OUs) or specific groups.
+        *   *Example:* Syncing only the "Instructors" group rather than the entire directory.
+    4.  **Optional Features:**
+        *   **Password Hash Synchronization:** Selected as the sign-on method.
+        *   **Password Writeback:** (Optional) Allows cloud password changes to write back to on-prem AD. (Disabled in this demo).
+    5.  **Configure:** The wizard configures the sync engine and starts the initial synchronization.
+*   **Post-Installation:**
+    *   **Synchronization Cycle:** The scheduler runs every 30 minutes by default to sync changes (new users, password updates) from on-prem to cloud.
+    *   **Verification:**
+        *   Go to **Azure Portal** > **Users**.
+        *   Verify that on-premises users appear with the "Directory synced" status set to **Yes**.
+    *   **Monitoring:** Use **Azure AD Connect Health** to monitor the sync status and troubleshoot errors.
 
 ## Module 3: Authentication & Access Management
 
