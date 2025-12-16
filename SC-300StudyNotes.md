@@ -480,6 +480,8 @@ This module covers the critical aspects of securing user identities through robu
 
 This section explores the various authentication methods available in Microsoft Entra ID to secure user access. It covers the configuration and enforcement of Multi-Factor Authentication (MFA), the implementation of passwordless authentication strategies, and the use of password protection policies. Additionally, it details how to enable Self-Service Password Reset (SSPR) to empower users to manage their own credentials.
 
+---
+
 #### 3.1.1 Introduction to Azure MFA
 
 *   **Overview:**
@@ -624,16 +626,190 @@ This section explores the various authentication methods available in Microsoft 
     *   Admins always have SSPR enabled (cannot be turned off).
     *   They are required to use strong authentication methods (Email, Phone, or App).
 
+#### 3.1.6 Enable Tenant Restrictions
+
+*   **Concept:**
+    *   **Tenant Restrictions** allow organizations to control access to SaaS applications based on the Azure AD tenant the applications use for single sign-on.
+    *   **Goal:** Prevent data exfiltration by ensuring users on the corporate network can only log in to permitted external tenants (e.g., preventing login to a personal Outlook.com account or a competitor's tenant).
+*   **How it Works:**
+    *   **Network Level:** It is not a policy configured on the user object or device directly in Azure AD. Instead, it relies on **Traffic Inspection** at the corporate proxy or firewall.
+    *   **Header Injection:** The proxy inserts a specific HTTP header (`Restrict-Access-To-Tenants`) into outgoing traffic destined for Azure AD login endpoints (`login.microsoftonline.com`, `login.windows.net`, etc.).
+    *   **Header Content:** The header includes a list of allowed Tenant IDs or domains.
+    *   **Azure AD Enforcement:** When Azure AD receives the request, it checks the header. If the target tenant is not in the allowed list, Azure AD blocks the sign-in attempt.
+*   **Configuration:**
+    1.  **Proxy Configuration:** Configure the on-premises proxy/firewall (e.g., F5, Palo Alto, Zscaler) to enable SSL inspection and inject the required headers.
+        *   `Restrict-Access-To-Tenants`: `<Allowed-Tenant-List>`
+        *   `Restrict-Access-Context`: `<Your-Directory-ID>` (Used for reporting).
+    2.  **Azure Portal (Reporting):**
+        *   Navigate to **Identity** > **External Identities** > **Tenant restrictions**.
+        *   Here you can view reports of blocked sign-in attempts if the `Restrict-Access-Context` header is configured correctly.
+*   **User Experience:**
+    *   If a user tries to sign in to a blocked tenant (e.g., personal Xbox/Skype), they receive a message stating: "Access to this organization has been restricted by your administrator."
+
 ### 3.2 Security & Conditional Access
+
+This section focuses on securing access to organizational resources using advanced security features. You will learn how to implement Azure AD Security Defaults for baseline protection, configure Tenant Restrictions to control access to external SaaS applications, and master Conditional Access policies to enforce granular access controls based on signals like user, location, device, and application. Additionally, it explores Azure AD Identity Protection to detect and remediate identity-based risks.
+
+---
+
 #### 3.2.1 Azure AD Security Defaults
-#### 3.2.2 Enable Tenant Restrictions
-#### 3.2.3 Azure AD Conditional Access
-#### 3.2.4 Test Conditional Access
-#### 3.2.5 AD Identity Protection
+
+*   **Overview:**
+    *   **Security Defaults** is a set of basic identity security mechanisms recommended by Microsoft.
+    *   **Default State:** Enabled by default for all new tenants created after October 2019.
+    *   **Target Audience:** Organizations that want a baseline level of security without configuring complex Conditional Access policies (often smaller businesses or those on the Free tier).
+*   **What Security Defaults Enforce:**
+    1.  **Unified MFA Registration:** All users are required to register for Multi-Factor Authentication using the Microsoft Authenticator app. They have a **14-day grace period** to register after their first sign-in.
+    2.  **MFA for Administrators:** Users with highly privileged roles (e.g., Global Admin, Security Admin, Exchange Admin) are required to perform MFA every time they sign in.
+    3.  **MFA for All Users:** Standard users are prompted for MFA when necessary (based on usage patterns), though not necessarily every time.
+    4.  **Blocking Legacy Authentication:** Older protocols that do not support MFA (like POP3, IMAP, SMTP, and older Office clients) are blocked to prevent password spray attacks.
+    5.  **Privileged Activities:** Access to the Azure Portal, Azure CLI, and PowerShell is restricted to authenticated users with MFA.
+*   **Security Defaults vs. Conditional Access:**
+    *   **Mutually Exclusive:** You cannot use both simultaneously.
+    *   **Limitation:** Security Defaults are "all or nothing." You cannot exclude specific accounts (like a Break Glass account) or customize the rules.
+    *   **Transition:** To implement custom **Conditional Access** policies (which offer granularity), you must first **disable** Security Defaults.
+*   **Disabling Security Defaults:**
+    1.  Navigate to **Microsoft Entra ID** > **Properties**.
+    2.  Click the link **Manage security defaults** (at the bottom).
+    3.  Set **Enable security defaults** to **No**.
+    4.  Select a reason for disabling (e.g., "My organization is using Conditional Access").
+    5.  Click **Save**.
+
+
+#### 3.2.2 Azure AD Conditional Access
+
+*   **Concept:**
+    *   **Conditional Access** is the policy engine of Microsoft Entra ID (Zero Trust). It analyzes signals to make access decisions and enforce organizational policies.
+    *   **Logic:** "If this (Conditions), Then that (Access Controls)."
+*   **Key Components (Signals & Decisions):**
+    *   **Assignments (Who):**
+        *   Defines which users or groups the policy applies to.
+        *   **Best Practice:** Always exclude a "Break Glass" (emergency access) account to prevent locking yourself out of the tenant.
+    *   **Cloud Apps or Actions (What):**
+        *   **Cloud Apps:** Select specific apps (e.g., Azure Portal, Office 365) or "All Cloud Apps".
+        *   **User Actions:** Register security information, Register or join devices.
+    *   **Conditions (When):**
+        *   **User Risk:** (Requires Identity Protection) Likelihood that a user identity is compromised (e.g., leaked credentials). Levels: High, Medium, Low.
+        *   **Sign-in Risk:** (Requires Identity Protection) Likelihood that a specific sign-in is suspicious (e.g., anonymous IP, impossible travel).
+        *   **Device Platforms:** Android, iOS, Windows, macOS.
+        *   **Locations:** Trusted locations (corporate network) vs. Untrusted locations.
+        *   **Client Apps:** Browser vs. Mobile apps vs. Legacy authentication.
+    *   **Access Controls (Grant/Block):**
+        *   **Block Access:** Deny the sign-in.
+        *   **Grant Access:** Allow access if requirements are met:
+            *   Require Multi-Factor Authentication (MFA).
+            *   Require device to be marked as compliant (Intune).
+            *   Require Hybrid Azure AD joined device.
+*   **Policy State:**
+    *   **Report-only:** Logs the policy result without enforcing it (Audit mode).
+    *   **On:** Enforces the policy.
+    *   **Off:** Disabled.
+*   **Example Scenario: Risky Accounts Policy**
+    *   **Goal:** Require MFA for users with Medium or High risk.
+    *   **Steps:**
+        1.  **Name:** "Risky Accounts".
+        2.  **Users:** Select specific group (e.g., "Students").
+        3.  **Cloud Apps:** Select "All cloud apps".
+        4.  **Conditions:** Under **User risk**, configure "Yes" and select **High** and **Medium**.
+        5.  **Grant:** Select **Grant access** and check **Require multi-factor authentication**.
+        6.  **Enable Policy:** Set to **On**.
+
+#### 3.2.3 Test Conditional Access
+
+*   **The "What If" Tool:**
+    *   **Purpose:** A simulation tool within the Conditional Access blade that allows administrators to predict the impact of policies on a user's sign-in without actually performing the sign-in.
+    *   **Use Case:** Essential for troubleshooting existing policies and validating new policies before they are enforced (to prevent accidental lockouts).
+*   **How to Use:**
+    1.  Navigate to **Conditional Access** > **What If**.
+    2.  **Select User:** Choose the specific user you want to test (e.g., a Student or a Teacher).
+    3.  **Configure Conditions:** Simulate the scenario by setting:
+        *   **Cloud Apps:** Which app are they accessing?
+        *   **IP Address:** Are they coming from a trusted or untrusted location?
+        *   **Device Platform:** Windows, iOS, Android?
+        *   **Risk Level:** Simulate a "High" user risk or sign-in risk to see if risk-based policies trigger.
+    4.  **Run Evaluation:** Click **What If**.
+*   **Results:**
+    *   **Policies that will apply:** Lists policies where the user matches all assignments and conditions. Shows the Grant/Block controls that would be enforced.
+    *   **Policies that will not apply:** Lists policies that were evaluated but didn't trigger. Crucially, it provides the **reason** (e.g., "User not included in policy" or "Condition not matched").
+
+#### 3.2.4 AD Identity Protection
+
+*   **Overview:**
+    *   **Identity Protection** automates the detection and remediation of identity-based risks using Microsoft's threat intelligence and machine learning.
+    *   **Licensing:** Requires **Azure AD Premium P2**.
+    *   **Core Function:** It assesses risk at two levels: **User Risk** and **Sign-in Risk**.
+*   **1. User Risk Policy:**
+    *   **Definition:** Detects the probability that a user's identity has been compromised (e.g., credentials found on the dark web).
+    *   **Configuration:**
+        *   **Assignments:** Select users/groups (e.g., All Users).
+        *   **Conditions:** Set the risk level threshold (e.g., High).
+        *   **Controls:**
+            *   **Block Access:** Prevent the user from signing in.
+            *   **Allow access and require password change:** The user must perform MFA and then reset their password to self-remediate the compromised identity.
+*   **2. Sign-in Risk Policy:**
+    *   **Definition:** Detects the probability that a specific sign-in attempt is suspicious (e.g., impossible travel, anonymous IP address, unfamiliar sign-in properties).
+    *   **Configuration:**
+        *   **Assignments:** Select users/groups.
+        *   **Conditions:** Set the risk level threshold (e.g., Medium and above).
+        *   **Controls:**
+            *   **Block Access.**
+            *   **Allow access and require multi-factor authentication:** If the user passes the MFA challenge, the risk is considered remediated (the user proved they are who they say they are despite the suspicious location).
+*   **3. MFA Registration Policy:**
+    *   **Purpose:** Ensures users are registered for MFA so they can actually respond to the risk-based challenges defined above.
+    *   **Behavior:** When enabled, users are prompted to set up MFA upon their next interactive sign-in and have a **14-day grace period** to complete registration.
+*   **Reporting:**
+    *   **Risky users:** A report showing users currently flagged as at-risk.
+    *   **Risky sign-ins:** A log of specific authentication events that triggered risk detections.
 
 ### 3.3 Application Management
+
+This section covers the integration and management of applications within Microsoft Entra ID. You will learn how to register applications, configure Enterprise Applications for Single Sign-On (SSO), manage user consent settings, and monitor application usage to ensure secure and seamless access to organizational resources.
+
+---
+
 #### 3.3.1 Introduction to Enterprise Application Integration
+
+*   **Overview:**
+    *   **Objective:** Implement Access Management for Apps (10-15% of exam).
+    *   **Concept:** Use Microsoft Entra ID (Azure AD) as the central **Identity Provider (IdP)** for third-party SaaS applications (Service Providers).
+    *   **Single Sign-On (SSO):** Enables users to access external applications (like Salesforce, AWS, Dropbox) using their corporate Entra ID credentials.
+*   **Benefits:**
+    *   **Security:** Centralized control over access. If a user leaves, disabling their Entra ID account revokes access to all integrated apps immediately.
+    *   **User Experience:** Users only need to remember one set of credentials.
+    *   **Compliance:** Logs and audit trails for application access are centralized in Entra ID.
+*   **The Application Gallery:**
+    *   **Location:** **Enterprise applications** > **New application**.
+    *   **Content:** A repository of thousands of pre-integrated applications (e.g., AWS, Google Cloud, Oracle, SAP, Adobe, Atlassian, Box, DocuSign, Cisco Webex, GitHub).
+    *   **Function:** These gallery apps come with pre-configured settings to simplify the setup of SSO and user provisioning.
+*   **Integration Workflow:**
+    1.  **Add Application:** Select the app from the Azure AD Gallery.
+    2.  **Configure SSO:** Set up the trust relationship (usually SAML or OIDC) between Azure AD and the application. This often requires configuration on both sides (Azure AD and the App's admin console).
+    3.  **Assign Users:** Grant specific users or groups access to the application.
+*   **Scenario Example (AWS):**
+    *   By integrating AWS with Azure AD, a user can log in to the AWS Management Console using their Azure AD account.
+    *   Azure AD authenticates the user and passes their role information to AWS, determining what they can do within the AWS environment.
+
 #### 3.3.2 Application Controls
+
+*   **Overview:**
+    *   Beyond simple Grant/Block access, Azure AD can enforce granular controls *within* an application session using **Conditional Access App Control**.
+    *   This integrates with **Microsoft Defender for Cloud Apps** (formerly MCAS) to act as a reverse proxy for real-time monitoring and control.
+*   **Session Controls:**
+    *   Located under the **Session** section of a Conditional Access policy (not Grant/Block).
+    *   **Use Conditional Access App Control:**
+        *   **Monitor only:** Logs user activities in the app.
+        *   **Block downloads:** Prevents users from saving files to their local device.
+        *   **Use custom policy:** Allows for granular rules defined in Defender for Cloud Apps (e.g., "Block download of files containing credit card numbers").
+*   **Example Scenario: Restricting Dropbox**
+    *   **Goal:** Allow users to access Dropbox to view files but prevent them from downloading files to unmanaged devices.
+    *   **Configuration:**
+        1.  **Policy Name:** "Block Dropbox Downloads".
+        2.  **Users:** All Users.
+        3.  **Cloud Apps:** Select **Dropbox**.
+        4.  **Session:** Check **Use Conditional Access App Control** and select **Block downloads** (or Custom Policy).
+    *   **Result:** When a user logs into Dropbox via Azure AD, their session is routed through the Defender for Cloud Apps proxy. If they try to download a file, the action is blocked in real-time.
+
+
 
 ## Module 4: Identity Governance
 
