@@ -289,11 +289,115 @@ This section details the mechanisms for enabling secure collaboration with exter
 ---
 
 #### 2.1.1 External Collaboration Settings
+
+*   **Overview of External Identities:**
+    *   **B2B (Business-to-Business):** Designed for collaborating with partners and vendors. These users are invited as **Guest Users** into the directory. They can access resources like Teams, SharePoint, and enterprise apps.
+    *   **B2C (Business-to-Consumer):** Designed for customer-facing applications. Users sign in with social identities (Google, Facebook) or local accounts to access custom applications.
+*   **External Collaboration Settings:**
+    *   Located under **External Identities** > **External collaboration settings**. These settings control how guest users interact with the tenant.
+*   **1. Guest User Access:**
+    *   Determines the level of visibility guest users have regarding other users and groups in the directory.
+    *   **Same as members:** Guests have full read access to all directory data (not recommended).
+    *   **Limited access:** Guests can see their own profile but have limited visibility into other users (cannot see group memberships of others).
+    *   **Restricted access:** Guests can only see their own profile and absolutely nothing else in the directory.
+*   **2. Guest Invite Settings:**
+    *   Controls who is authorized to invite external users.
+    *   **Anyone in the organization:** Includes Member users and even Guest users (if enabled).
+    *   **Member users and admins:** Standard users can invite guests.
+    *   **Only users with specific admin roles:** Restricts invitations to roles like **Guest Inviter** or **Global Administrator**.
+    *   **No one:** Disables the ability to invite guests entirely.
+*   **3. Collaboration Restrictions (Domain Restrictions):**
+    *   Controls which domains are permitted or blocked for invitations.
+    *   **Allow invitations to any domain:** (Default) No restrictions.
+    *   **Deny invitations to specified domains:** Block specific domains (e.g., competitors or public email providers like `gmail.com`).
+    *   **Allow invitations only to specified domains:** Whitelist approach. Invitations can *only* be sent to the listed domains.
+
 #### 2.1.2 Invite External Users
+
+*   **Concept:**
+    *   Inviting external users (B2B) allows them to access your organization's resources using their existing credentials (BYOID - Bring Your Own Identity).
+    *   They are added as **Guest** users in the directory.
+*   **Step-by-Step: Inviting a User:**
+    1.  **Navigation:** Go to **Users** > **New user** > **Invite external user**.
+    2.  **Basics:**
+        *   **Email:** Enter the external email address (e.g., `partner@gmail.com` or `colleague@othercompany.com`).
+        *   **Display Name:** Name of the user.
+        *   **Personal Message:** (Optional) A custom message included in the email invitation.
+    3.  **Review + Invite:** Sends the email.
+*   **The Redemption Process (Guest Experience):**
+    1.  **Email:** The user receives an email with a link to "Accept invitation".
+    2.  **Consent:** Clicking the link triggers a consent prompt, asking permission for the organization to read their profile.
+    3.  **Access:** Once accepted, the user is redirected to the My Apps portal (`myapplications.microsoft.com`) or the specific resource URL.
+    4.  **Initial State:** By default, the user may not see any applications until access is explicitly granted.
+*   **Granting Access to Applications:**
+    *   Guest users do not automatically get access to apps.
+    *   **Steps to Assign an App:**
+        1.  Navigate to **Enterprise applications**.
+        2.  Select (or add) an application (e.g., Adobe Creative Cloud, Salesforce, or a custom app).
+        3.  Go to **Users and groups** > **Add user/group**.
+        4.  Select the Guest User and assign them.
+    *   **Result:** The application will now appear in the guest user's My Apps dashboard.
+
 #### 2.1.3 Bulk Invite External Users
+
+*   **Overview:**
+    *   Azure AD provides **Bulk Operations** to manage large sets of users efficiently, avoiding manual entry for each individual.
+    *   **Available Operations:** Bulk Create, Bulk Invite, Bulk Delete, and Download Users.
+*   **Bulk Invite via CSV (Portal):**
+    *   **Scenario:** Inviting multiple external partners at once.
+    *   **Process:**
+        1.  Navigate to **Users** > **Bulk operations** > **Bulk invite**.
+        2.  **Download Template:** Azure provides a specific CSV template.
+        3.  **Edit CSV:**
+            *   Fill in the required columns (e.g., **Email address to invite**).
+            *   Optional columns include **Redirection url** and custom messages.
+            *   *Important:* Do not modify the file structure or headers.
+        4.  **Upload:** Upload the saved CSV file to trigger the bulk invitation process.
+*   **Programmatic Invitation (PowerShell):**
+    *   **Scenario:** When user data is in a database or requires logic/transformation before inviting.
+    *   **Cmdlet:** `New-AzureADMSInvitation` (Azure AD PowerShell module).
+    *   **Method:** Write a script to iterate through a list of users and execute the invitation command for each.
+
 #### 2.1.4 Manage External Users
-#### 2.1.5 External User Lifecycle Management
-#### 2.1.6 B2C Social Media Users
+
+*   **Management Parity:**
+    *   Managing external (Guest) users in the Azure Portal offers a similar experience to managing internal (Member) users.
+    *   **Common Administrative Tasks:**
+        *   **Security:** Revoke sessions (force sign-out), Reset password (if applicable to the account type), and Delete the account.
+        *   **Monitoring:** View **Sign-in logs** and **Audit logs** to track user activity and access history.
+*   **Access & Authorization:**
+    *   **Zero Trust Start:** Guest users start with no access (blank "My Apps" portal) until resources are explicitly assigned.
+    *   **Assignments:**
+        *   **Groups:** Add guests to groups for easier management.
+        *   **Applications:** Assign guests to Enterprise Applications (e.g., Adobe, Salesforce).
+        *   **Admin Roles:** Guests *can* be assigned administrative roles (e.g., **Helpdesk Administrator**) to manage resources or support users within your tenant.
+*   **On-Premises Limitations:**
+    *   Guest users are **Cloud-only** objects in the inviting tenant.
+    *   They are **not** synced back to the on-premises Active Directory.
+    *   **Result:** They cannot log in to on-premises domain-joined Windows devices or authenticate against local AD domain controllers.
+*   **Bulk Operations:**
+    *   Guest users can be managed via bulk operations (e.g., Bulk Delete) using CSV templates, just like member users.
+
+#### 2.1.5 B2C Social Media Users
+
+*   **Overview:**
+    *   **B2C (Business-to-Consumer):** Focuses on "end users" or customers who register for applications using their existing social identities or email addresses, rather than a partner organization account.
+    *   **Goal:** Simplify the sign-up and sign-in process by allowing users to bring their own identity (BYOID).
+*   **Identity Providers (IdPs):**
+    *   Located under **External Identities** > **All identity providers**.
+    *   **Default Providers:**
+        *   **Azure Active Directory:** Standard authentication.
+        *   **Microsoft Account:** Allows users with Outlook, Hotmail, or Live accounts to sign in.
+        *   **Email One-Time Passcode (OTP):**
+            *   **Mechanism:** Users without a supported account receive a code via email to sign in (Magic Link).
+            *   **Configuration:** Can be enabled, disabled, or scheduled for future enforcement.
+    *   **Social Identity Providers:**
+        *   **Google / Facebook:**
+            *   Allows users to sign in with their Google or Facebook accounts.
+            *   **Setup:** Requires creating a developer application in the respective platform (Google/Facebook) to obtain a **Client ID** and **Client Secret**, which are then configured in Azure AD.
+    *   **Generic Providers (SAML / WS-Fed):**
+        *   **Purpose:** Integrate with any Identity Provider that supports SAML or WS-Federation protocols (e.g., LinkedIn, Twitter, or a custom IdP).
+        *   **Federation:** Establishes a trust relationship where Azure AD accepts authentication tokens from the external provider.
 
 ### 2.2 Hybrid Identity
 
@@ -330,6 +434,7 @@ This section focuses on integrating on-premises Active Directory environments wi
 #### 4.1.1 Introduction to Entitlement Management and Packages
 #### 4.1.2 Create and Manage Access Packages
 #### 4.1.3 Create and Require Terms of Use
+#### 4.1.3 External User Lifecycle Management
 
 ### 4.2 Access Reviews
 #### 4.2.1 Introduction to Access Reviews
