@@ -454,7 +454,7 @@ This section focuses on integrating on-premises Active Directory environments wi
         *   **Azure AD:** Global Administrator or Hybrid Identity Administrator.
         *   **On-Premises:** Enterprise Administrator (for creating the AD account used by the service).
 *   **Installation Steps (Express vs. Custom):**
-    *   *The transcript follows a custom path to demonstrate filtering.*
+
     1.  **Connect to Azure AD:** Launch the installer and sign in with your Azure AD Global Admin credentials.
     2.  **Connect to Directories:** Enter the credentials for the on-premises Active Directory Forest.
     3.  **Domain and OU Filtering:**
