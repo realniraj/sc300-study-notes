@@ -146,6 +146,7 @@ This section covers the core identity objects within Microsoft Entra ID. You wil
     *   **Dynamic User:**
         *   Membership is determined by a **Dynamic Query** based on user properties (e.g., `user.department -eq "Sales"` or `user.userPrincipalName -contains "student"`).
         *   **Automation:** When a user's attributes change to match the rule, they are automatically added. If they no longer match, they are removed.
+
 #### 1.2.3 Device Management
 
 *   **Overview:**
@@ -171,6 +172,7 @@ This section covers the core identity objects within Microsoft Entra ID. You wil
     *   **Users may join devices to Azure AD:** Controls who can perform Azure AD Join.
     *   **Require Multi-Factor Authentication (MFA) to join devices:** Enhances security during the join process.
     *   **Maximum number of devices per user:** Limits the number of devices a user can register (e.g., 20 or 50).
+
 #### 1.2.4 Administrative Units
 
 *   **Concept:**
@@ -194,6 +196,7 @@ This section covers the core identity objects within Microsoft Entra ID. You wil
         *   **Result:** This admin can now perform their role's actions *only* on the members of this specific Administrative Unit.
 *   **Licensing Requirement:**
     *   Assigning roles at the scope of an administrative unit requires an **Azure AD Premium P1 or P2** license for the administrator being assigned the role.
+
 #### 1.2.5 Assign Azure AD Premium Licenses to Users
 
 *   **Overview:**
@@ -221,15 +224,62 @@ This section covers the core identity objects within Microsoft Entra ID. You wil
 *   **Strategic Licensing:**
     *   **Selective Assignment:** You do not need to license every user in the tenant.
     *   **Cost Optimization:** Assign Premium licenses only to users who require specific features (e.g., Administrators needing PIM, or specific departments needing SSPR), while keeping others on the Free plan.
+
 ### 1.3 Roles and Administration
+
+This section focuses on the Role-Based Access Control (RBAC) model within Microsoft Entra ID. You will learn how to assign built-in administrative roles to users to delegate tasks effectively while adhering to the principle of least privilege. Additionally, it covers the creation of custom roles to meet specific organizational requirements that built-in roles may not cover.
 
 ---
 #### 1.3.1 Assign Admin Roles
+
+*   **Azure AD Roles vs. Azure Resource Roles:**
+    *   **Azure AD Roles:** Purely administrative roles used to grant access to manage Azure AD resources (users, groups, apps) and other Microsoft services (Office 365, Intune, Dynamics).
+    *   **Azure Resource Roles (RBAC):** Used to manage Azure resources like Virtual Machines, Web Apps, and Storage Accounts.
+*   **Built-in Roles:**
+    *   Azure AD comes with over 75 built-in roles to cover various administrative tasks.
+*   **Key Roles:**
+    *   **Global Administrator:**
+        *   The highest level of access (Company Administrator).
+        *   Has permissions to manage all aspects of Azure AD and Microsoft services.
+        *   Can read, write, create, delete, and update all resources.
+    *   **Granular Roles:** Specific roles designed for limited tasks.
+        *   **Guest Inviter:** Can only invite external users (guests).
+        *   **Password Administrator:** Can reset passwords for non-admins.
+        *   **License Administrator:** Can manage product licenses.
+        *   **Intune Administrator:** Manages device configuration and compliance.
+*   **Security Best Practice: Principle of Least Privilege:**
+    *   Do not assign Global Administrator to everyone in the IT team.
+    *   Assign users the specific role(s) required to perform their job functions.
+    *   **Benefit:** Reduces the attack surface (if an account is compromised) and prevents accidental changes to critical configurations.
+    *   Users can be assigned **multiple roles** if their job requires permissions from different areas (e.g., Directory Writers + Exchange Administrator).
+
 #### 1.3.2 Define Custom Roles
+
+*   **Prerequisites:**
+    *   Creating custom roles requires an **Azure AD Premium P1 or P2** license.
+    *   If you are on the Free tier, the "New custom role" button will be grayed out.
+*   **Why use Custom Roles?**
+    *   While there are over 70 built-in roles, they may be too broad for specific security requirements.
+    *   **Principle of Least Privilege:** Custom roles allow you to grant *only* the specific permissions needed for a job function, without including dangerous permissions (like Delete).
+*   **Strategy for Creation:**
+    *   Start by analyzing a built-in role that is similar to what you need (e.g., Group Administrator).
+    *   Identify which permissions to keep and which to remove (e.g., Keep "Update", Remove "Create" and "Delete").
+*   **Example Scenario: "Group Updater" Role**
+    *   **Goal:** Create a role that can update group properties and membership but **cannot create or delete groups**.
+    *   **Steps:**
+        1.  Navigate to **Roles and administrators**.
+        2.  Select **New custom role**.
+        3.  **Basics:** Enter a name (e.g., "Group Updater") and description.
+        4.  **Permissions:**
+            *   Search for the resource (e.g., "groups").
+            *   Select specific permissions from the list (e.g., `microsoft.directory/groups/update`, `microsoft.directory/groups/members/update`).
+            *   Ensure "Create" and "Delete" permissions are **not** selected.
+        5.  **Review + Create:** Finalize the role.
+    *   **Result:** Users assigned to this role can manage group day-to-day operations without the risk of accidental deletion or unauthorized creation of new groups.
+*   **Cloning:** You cannot clone a built-in role directly to create a custom role; you must start from scratch or clone an existing custom role.
 
 ## Module 2: External Identities & Hybrid Identity
 
----
 
 ### 2.1 External Collaboration (B2B & B2C)
 
