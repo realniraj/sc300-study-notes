@@ -119,7 +119,12 @@ This section covers the core identity objects within Microsoft Entra ID. You wil
 
 ## Module 2: External Identities & Hybrid Identity
 
+---
+
 ### 2.1 External Collaboration (B2B & B2C)
+
+---
+
 #### 2.1.1 External Collaboration Settings
 #### 2.1.2 Invite External Users
 #### 2.1.3 Bulk Invite External Users
