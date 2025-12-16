@@ -103,14 +103,124 @@ This section covers the core identity objects within Microsoft Entra ID. You wil
 
 #### 1.2.1 User Management
 
+*   **Core Concepts:**
+    *   **Authentication:** The process of verifying identity (User ID + Password + MFA). Once validated, Azure AD issues a token to the application.
+    *   **Authorization:** The process of determining what permissions the user has after they are authenticated.
+*   **Creating a New User:**
+    *   **Navigation:** Go to **Users** > **New user** > **Create new user**.
+    *   **Mandatory Fields:**
+        *   **User name (UPN):** The login ID (e.g., `user@domain.com`). You can choose the default `onmicrosoft.com` domain or a verified custom domain.
+        *   **Name:** The display name (e.g., "Test User Two").
+    *   **Optional Settings:**
+        *   **Password:** Choose to auto-generate or manually set a password.
+        *   **Groups/Roles:** Can be assigned during creation (though often done later).
+        *   **Settings:** Block sign in (Enable/Disable account), Usage location (Important for licensing).
+        *   **Job Info:** Job title, Department, Manager.
+*   **Default Permissions:**
+    *   A newly created user has **no access rights** to Azure resources or applications by default. They must be explicitly granted access via roles or groups.
+*   **User Management & Lifecycle:**
+    *   **Source of Authority:** Users can be **Cloud-only** (created in Azure Portal) or **Synced** (from on-premises AD via Azure AD Connect).
+    *   **Administrative Actions:**
+        *   **Reset Password:** Allows admins to reset credentials if a user is locked out.
+        *   **Revoke Sessions:** Invalidates existing tokens, forcing the user to sign in again (useful for compromised accounts).
+        *   **Edit Properties:** Update biographical data, contact info, and job details.
+*   **Limits:** There are limits to the number of directory objects (users, groups) a tenant can hold, though these limits are high.
+
 #### 1.2.2 Group Management
 
+*   **Purpose:** Groups allow administrators to manage users collectively rather than individually. They are used for assigning permissions to resources or applications in bulk.
+*   **Group Types:**
+    *   **Security:** Used for managing access to resources (apps, data). Can contain users, devices, groups, and service principals.
+    *   **Microsoft 365:** Used for collaboration (Teams, SharePoint, Outlook). Includes a shared mailbox, calendar, etc.
+*   **Creating a Group:**
+    *   **Azure AD Roles Assignment:**
+        *   When creating a group, you can enable **"Azure AD roles can be assigned to the group"**.
+        *   **Important:** Once set to **Yes**, this cannot be changed back to No. This allows the group to hold admin roles (e.g., Helpdesk Administrator), simplifying role management.
+*   **Group Roles:**
+    *   **Owners:** Users who can manage the group settings and membership. Owners do not have to be members of the group (i.e., they don't necessarily inherit the group's access rights).
+    *   **Members:** The users (or devices) that belong to the group and inherit permissions assigned to it.
+*   **Membership Types:**
+    *   **Assigned:**
+        *   Administrators manually select and add specific users to the group.
+        *   Membership only changes when an admin manually adds or removes a user.
+    *   **Dynamic User:**
+        *   Membership is determined by a **Dynamic Query** based on user properties (e.g., `user.department -eq "Sales"` or `user.userPrincipalName -contains "student"`).
+        *   **Automation:** When a user's attributes change to match the rule, they are automatically added. If they no longer match, they are removed.
 #### 1.2.3 Device Management
 
+*   **Overview:**
+    *   Device management enables organizations to secure and manage devices (Windows, macOS, iOS, Android, Linux) accessing corporate resources.
+    *   It is a prerequisite for implementing **Conditional Access** policies based on device compliance.
+*   **Device Identity Types:**
+    *   **Azure AD Registered:**
+        *   **Scenario:** Bring Your Own Device (BYOD).
+        *   **Description:** Personal devices where the user signs in with a personal account but adds a Work/School account to access apps (e.g., Teams, Outlook).
+        *   **Authentication:** User authenticates to the app, not the OS.
+    *   **Azure AD Joined:**
+        *   **Scenario:** Corporate-owned devices.
+        *   **Description:** The device is owned by the organization. The user signs in to the OS using their Entra ID credentials.
+        *   **Benefit:** Full control over the device, SSO to cloud and on-premises resources.
+*   **Registration Process (Windows Example):**
+    1.  Navigate to **Settings** > **Accounts** > **Access work or school**.
+    2.  Click **Connect**.
+    3.  Enter the corporate email (UPN) and password.
+    4.  The device is registered, and policies are applied.
+    5.  **Verification:** In Azure Portal > **Devices**, the device appears with the status "Azure AD Registered".
+*   **Device Settings:**
+    *   Located under **Devices** > **Device settings** in the portal.
+    *   **Users may join devices to Azure AD:** Controls who can perform Azure AD Join.
+    *   **Require Multi-Factor Authentication (MFA) to join devices:** Enhances security during the join process.
+    *   **Maximum number of devices per user:** Limits the number of devices a user can register (e.g., 20 or 50).
 #### 1.2.4 Administrative Units
 
+*   **Concept:**
+    *   An **Administrative Unit (AU)** is a container used to logically group Azure AD resources (users, groups, devices) for the purpose of delegating administrative permissions.
+    *   It allows you to restrict the scope of an administrative role to a specific subset of the organization.
+*   **Use Case:**
+    *   **Regional Administration:** Useful for organizations with independent divisions or geographic regions (e.g., "Central Region", "Northeast Region").
+    *   **Delegation:** Instead of giving a Help Desk Administrator global access to reset passwords for *everyone* in the tenant, you can restrict them to reset passwords only for users in the "Central Region" AU.
+*   **Configuration Steps:**
+    1.  **Create Administrative Unit:**
+        *   Navigate to **Administrative units** > **Add**.
+        *   Provide a **Name** (e.g., "Central Unit") and **Description**.
+    2.  **Add Members:**
+        *   Open the created AU.
+        *   Select **Members** > **Add member**.
+        *   Select the specific users, groups, or devices that belong to this logical unit.
+    3.  **Assign Roles (Scoped Administration):**
+        *   Select **Roles and administrators** within the AU blade.
+        *   Choose a role (e.g., **Helpdesk Administrator**, **User Administrator**, **Password Administrator**).
+        *   Assign a user (e.g., a regional IT staff member) to this role.
+        *   **Result:** This admin can now perform their role's actions *only* on the members of this specific Administrative Unit.
+*   **Licensing Requirement:**
+    *   Assigning roles at the scope of an administrative unit requires an **Azure AD Premium P1 or P2** license for the administrator being assigned the role.
 #### 1.2.5 Assign Azure AD Premium Licenses to Users
 
+*   **Overview:**
+    *   Azure AD (Entra ID) operates on a tiered licensing model (Free, Premium P1, Premium P2).
+    *   Upgrading to Premium tiers unlocks advanced security and governance features.
+*   **License Tiers & Features:**
+    *   **Azure AD Free:**
+        *   Basic identity management.
+        *   **MFA:** Limited to Mobile App authenticator. (Global Admins get SMS/Call).
+        *   **Object Limit:** 500,000 directory objects.
+    *   **Premium P2:**
+        *   **Advanced MFA:** SMS/Phone call for all users, fraud alerts, MFA reports, custom greetings.
+        *   **Identity Governance:** Privileged Identity Management (PIM), Access Reviews.
+        *   **Self-Service Password Reset (SSPR):** With on-premises writeback.
+        *   **No object limit.**
+*   **Managing Licenses:**
+    *   **Navigation:** Go to **Billing** > **Licenses** > **All products**.
+    *   **View Availability:** Shows total licenses purchased vs. assigned.
+*   **Assignment Methods:**
+    1.  **Direct Assignment:** Manually assign a license to an individual user profile.
+    2.  **Group-Based Licensing:**
+        *   Assign a license to a security group (e.g., "Teachers").
+        *   **Benefit:** All current and future members of the group automatically inherit the license. Removing a user from the group removes the license.
+        *   **Efficiency:** Greatly simplifies license management for large organizations.
+*   **Strategic Licensing:**
+    *   **Selective Assignment:** You do not need to license every user in the tenant.
+    *   **Cost Optimization:** Assign Premium licenses only to users who require specific features (e.g., Administrators needing PIM, or specific departments needing SSPR), while keeping others on the Free plan.
 ### 1.3 Roles and Administration
 
 ---
