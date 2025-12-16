@@ -97,6 +97,8 @@ This section focuses on the initial configuration and management of your Microso
 
 ### 1.2 Users, Groups, and Devices
 
+This section covers the core identity objects within Microsoft Entra ID. You will learn how to manage the lifecycle of user identities, organize them into groups for efficient access management, and register devices to ensure secure access to organizational resources. Additionally, it touches on administrative units for delegated administration and license assignment.
+
 ---
 
 #### 1.2.1 User Management
