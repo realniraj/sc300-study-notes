@@ -474,12 +474,155 @@ This section focuses on integrating on-premises Active Directory environments wi
 
 ## Module 3: Authentication & Access Management
 
+This module covers the critical aspects of securing user identities through robust authentication methods and access controls. You will learn about implementing Multi-Factor Authentication (MFA), passwordless strategies, and Self-Service Password Reset (SSPR). Furthermore, it dives into securing access using Conditional Access policies and managing enterprise applications to ensure only authorized users can access organizational resources.
+
 ### 3.1 Authentication Methods
+
+This section explores the various authentication methods available in Microsoft Entra ID to secure user access. It covers the configuration and enforcement of Multi-Factor Authentication (MFA), the implementation of passwordless authentication strategies, and the use of password protection policies. Additionally, it details how to enable Self-Service Password Reset (SSPR) to empower users to manage their own credentials.
+
 #### 3.1.1 Introduction to Azure MFA
+
+*   **Overview:**
+    *   **Multi-Factor Authentication (MFA):** A security process that requires more than one method of authentication from independent categories of credentials to verify the user's identity.
+    *   **Goal:** Protect user identities. If a password is compromised, the attacker still cannot access the account without the second factor (e.g., the user's phone).
+    *   **Scope:** This course focuses on **Azure MFA (Cloud-based)**. The on-premises **MFA Server** is deprecated and not covered.
+*   **Authentication Factors:**
+    *   **Something you know:** Password.
+    *   **Something you have:** Phone (SMS, Call, Mobile App), Hardware token.
+    *   **Something you are:** Biometrics (Fingerprint, Face ID).
+*   **Common Methods:**
+    *   **Microsoft Authenticator App:** Generates time-based codes or push notifications.
+    *   **SMS/Text Message:** Sends a code to the registered mobile number.
+    *   **Phone Call:** Automated call to verify identity.
+    *   **Email:** Often used for guest users or specific scenarios.
+*   **Enabling MFA:**
+    *   **Per-User MFA (Legacy/Basic):**
+        *   Enabled individually for specific users via a dedicated portal link.
+        *   **Status:** Disabled -> Enabled -> Enforced (after registration).
+        *   **User Experience:** Once enabled, the user is forced to register for MFA methods upon their next sign-in.
+    *   **Organizational Strategy:**
+        *   Instead of enabling per-user, it is better to have a strategy based on risk, roles (admins), or login frequency.
+        *   This is typically handled via **Conditional Access** (covered later) or Security Defaults.
+*   **Configuration Location:**
+    *   In the Azure Portal, search for **"Multifactor Authentication"** to access service-level settings (fraud alerts, session settings, trusted IPs).
+
 #### 3.1.2 MFA Settings
+
+*   **MFA Server:**
+    *   **Status:** Deprecated as of July 1, 2019. New deployments are not supported.
+    *   **Focus:** This course focuses on Azure MFA (Cloud).
+*   **Service Settings (Cloud MFA):**
+    *   Accessed via the "Additional cloud-based MFA settings" link in the portal.
+    *   **Trusted IPs:**
+        *   Allows users to skip MFA when signing in from a known corporate network location (Public IP CIDR ranges).
+        *   *Note:* Private IPs (e.g., 10.x.x.x) cannot be used here.
+    *   **Verification Options:**
+        *   **Call to phone:** Automated voice call.
+        *   **Text message to phone:** SMS with a code.
+        *   **Notification through mobile app:** Push notification (Approve/Deny) via Microsoft Authenticator.
+        *   **Verification code from mobile app:** Time-based One-Time Password (TOTP) via Microsoft Authenticator.
+    *   **Remember Multi-Factor Authentication:**
+        *   Allows users to mark a device as "Trusted" to skip MFA for a set number of days (1 to 365).
+*   **Azure Portal MFA Settings:**
+    *   **Account Lockout:**
+        *   Configures temporary account lockout after a sequence of failed MFA attempts (e.g., wrong code entered multiple times).
+        *   **Settings:** Number of denials before lockout, lockout duration, and reset counter duration.
+    *   **Block/Unblock Users:**
+        *   Manual administrative action to block a specific user from using MFA (e.g., if a device is lost or stolen).
+    *   **Fraud Alert:**
+        *   Allows users to report fraudulent MFA requests (e.g., receiving a push notification when they are not trying to sign in).
+        *   **Action:** Can be configured to automatically block the user when fraud is reported.
+        *   **Notifications:** Configure email recipients (e.g., Security Team) to receive alerts when fraud is reported.
+    *   **OATH Tokens:**
+        *   Support for hardware tokens (e.g., YubiKey, RSA key fobs) that generate OATH TOTP codes.
+        *   Admins can upload seed files to register these devices for users.
+    *   **Phone Call Settings:**
+        *   **Caller ID:** Configure a specific phone number to display when Azure calls users for MFA.
+        *   **Custom Greetings:** Upload audio files for custom greetings during the MFA call.
+
 #### 3.1.3 Passwordless Authentication
+
+*   **Concept:**
+    *   **The Goal:** Remove the password from the login experience entirely.
+    *   **Security vs. Convenience:**
+        *   **Passwords:** Convenient but Low Security.
+        *   **MFA:** High Security but Inconvenient.
+        *   **Passwordless:** High Security AND Convenient.
+*   **Three Main Passwordless Methods:**
+    1.  **Windows Hello for Business:**
+        *   **Type:** Device-specific biometric/PIN.
+        *   **Mechanism:** Replaces passwords with strong two-factor authentication on Windows 10/11 devices.
+        *   **Security:** Uses biometrics (Face, Fingerprint) or PIN tied to the device's TPM (Trusted Platform Module).
+    2.  **Microsoft Authenticator App (Phone Sign-In):**
+        *   **Type:** Software-based.
+        *   **Mechanism:** The user enters their username on the computer. A number is displayed on the screen. The user must open the app on their phone, select the matching number, and approve via biometric/PIN.
+        *   **Benefit:** Turns the phone into a secure token.
+    3.  **FIDO2 Security Keys:**
+        *   **Type:** Hardware device (USB, NFC, Bluetooth).
+        *   **Mechanism:** "Fast Identity Online". Users plug in a key (e.g., YubiKey) and touch it (often with a fingerprint) to authenticate.
+        *   **Use Case:** High security environments, shared workstations (kiosks, hospitals) where mobile phones are restricted or not practical.
+*   **Configuration:**
+    *   Navigate to **Security** > **Authentication methods**.
+    *   **Enable Methods:** Select the specific method (e.g., Microsoft Authenticator) and toggle "Enable" to **Yes**.
+    *   **Targeting:** Assign to **All users** or specific **Groups**.
+*   **User Experience (Number Matching):**
+    *   To prevent "MFA Fatigue" (users blindly approving requests), Microsoft enforces **Number Matching**. The user must physically see the login screen to know which number to select on their phone.
+
 #### 3.1.4 Password Protection
+
+*   **Overview:**
+    *   Azure AD Password Protection detects and blocks known weak passwords and their variants.
+    *   It consists of a **Global Banned Password List** (maintained by Microsoft) and a **Custom Banned Password List** (maintained by you).
+*   **Smart Lockout:**
+    *   **Goal:** Protect against brute-force attacks by locking out potential attackers while ensuring valid users can still access their accounts.
+    *   **Configuration:**
+        *   **Lockout threshold:** The number of failed attempts allowed before the account is locked (Default: 10).
+        *   **Lockout duration:** The length of time the account remains locked in seconds (Default: 60).
+    *   **Intelligence:** Azure AD uses "smart" logic to distinguish between a likely attacker and the genuine user, potentially locking out the attacker's IP while leaving the user's access from a trusted location intact.
+*   **Custom Banned Password List:**
+    *   **Purpose:** Prevent users from using organization-specific terms in their passwords, which are easily guessable (e.g., Company Name, "Password123", local sports teams).
+    *   **Normalization:** The algorithm checks for common character substitutions (e.g., "P@ssw0rd" matches "Password").
+    *   **Configuration:** Enter a list of strings (one per line) to ban.
+*   **On-Premises Integration:**
+    *   **Password Protection for Windows Server AD:**
+        *   You can extend Azure AD password policies to your on-premises Active Directory Domain Controllers.
+        *   **Requirement:** Install the Azure AD Password Protection proxy and agent on on-premises servers.
+    *   **Modes:**
+        *   **Audit:** Logs when a user sets a weak password but does not block it.
+        *   **Enforced:** Actively blocks users from setting passwords that violate the policy.
+
 #### 3.1.5 Self-Service Password Reset (SSPR)
+
+*   **Overview:**
+    *   **Self-Service Password Reset (SSPR)** allows users to reset their own passwords without contacting the help desk.
+    *   **Default State:** Disabled for standard users ("None"). Enabled by default for Administrators.
+*   **Enabling SSPR:**
+    *   Navigate to **Password reset** > **Properties**.
+    *   **Self Service Password Reset Enabled:**
+        *   **None:** Disabled.
+        *   **Selected:** Enable for specific groups (Recommended for piloting).
+        *   **All:** Enable for everyone in the tenant.
+*   **Authentication Methods:**
+    *   Define how users prove their identity before resetting a password.
+    *   **Number of methods required:** Choose 1 or 2.
+    *   **Available Methods:**
+        *   Mobile app notification / code.
+        *   Email.
+        *   Mobile phone (SMS).
+        *   Office phone (Call).
+        *   **Security Questions:** Can be used for SSPR (unlike MFA).
+*   **Registration:**
+    *   **Require users to register when signing in:** If set to **Yes**, users are prompted to set up their authentication data (phone/email) the next time they log in.
+*   **Notifications:**
+    *   **Notify users on password resets:** Sends an email to the user confirming the change (Security Alert).
+    *   **Notify all admins when other admins reset their password:** Alerts the admin team of privileged account changes.
+*   **Hybrid Identity (Password Writeback):**
+    *   **Scenario:** If users are synced from on-premises AD.
+    *   **Requirement:** **Password Writeback** must be enabled in Azure AD Connect.
+    *   **Function:** When a user resets their password in the cloud, Azure AD writes the new password back to the on-premises Active Directory in real-time. Without this, the on-prem password remains unchanged.
+*   **Administrator Policy:**
+    *   Admins always have SSPR enabled (cannot be turned off).
+    *   They are required to use strong authentication methods (Email, Phone, or App).
 
 ### 3.2 Security & Conditional Access
 #### 3.2.1 Azure AD Security Defaults
