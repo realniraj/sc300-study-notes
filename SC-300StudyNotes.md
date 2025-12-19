@@ -1140,3 +1140,8 @@ This section covers **Privileged Identity Management (PIM)**, a service in Micro
 *   **Monitoring & Maintenance:**
     *   **Alerting:** Configure log monitoring to send an immediate high-priority alert (SMS/Email) to the security team whenever this account signs in.
     *   **Testing:** Validate the account periodically (e.g., every 90 days) to ensure the password works and the account hasn't been blocked.
+
+## Summary:
+This study guide provides a comprehensive overview of the key skills measured in the SC-300 exam. It began with the fundamentals of **Identity Management**, covering tenant configuration, user and group lifecycle, and role-based access control. We then explored **External Identities and Hybrid Identity**, detailing how to secure collaboration and synchronize on-premises directories with the cloud.
+
+The guide emphasized **Authentication and Access Management**, focusing on MFA, passwordless methods, and the implementation of robust Conditional Access policies to secure resources. Finally, we covered **Identity Governance**, explaining how to automate access lifecycles with Entitlement Management, perform Access Reviews, and secure administrative access using Privileged Identity Management (PIM). Mastering these concepts is essential for any Identity and Access Administrator working with Microsoft Entra ID.
