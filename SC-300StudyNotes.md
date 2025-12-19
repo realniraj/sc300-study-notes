@@ -809,23 +809,334 @@ This section covers the integration and management of applications within Micros
         4.  **Session:** Check **Use Conditional Access App Control** and select **Block downloads** (or Custom Policy).
     *   **Result:** When a user logs into Dropbox via Azure AD, their session is routed through the Defender for Cloud Apps proxy. If they try to download a file, the action is blocked in real-time.
 
-
+---
 
 ## Module 4: Identity Governance
 
+This module delves into the advanced capabilities of Microsoft Entra Identity Governance. You will learn how to automate access lifecycle management using Entitlement Management, ensure that access rights remain appropriate over time with Access Reviews, and manage and secure privileged roles using Privileged Identity Management (PIM) to enforce the principle of least privilege.
+
 ### 4.1 Entitlement Management
+
+This section covers Microsoft Entra Entitlement Management, a key identity governance feature. You will learn how to simplify access management by bundling resources (group memberships, application access, SharePoint sites) into 'access packages' that users can request. This automates the access request, approval, and lifecycle management process for both internal and external users.
+
+---
+
 #### 4.1.1 Introduction to Entitlement Management and Packages
+
+*   **Overview:**
+    *   **Identity Governance:** This topic covers the planning and implementation of identity governance strategies, which accounts for **25-30%** of the SC-300 exam.
+    *   **The Challenge:** Managing permissions at scale is difficult. It is often impossible to predetermine exactly what permissions every user needs, leading to permission creep or administrative bottlenecks.
+    *   **The Solution:** **Entitlement Management** automates access request workflows, access assignments, reviews, and expiration.
+*   **Navigation:**
+    *   Located in the Azure Portal under **Identity Governance** > **Entitlement management**.
+*   **Key Concepts:**
+    *   **Access Packages:**
+        *   **Definition:** A bundle of all the resources a user needs to work on a project or perform a specific role.
+        *   **Resource Types:** Can include:
+            *   **Groups and Teams:** (e.g., Microsoft 365 Groups).
+            *   **Applications:** (e.g., Enterprise Applications, SaaS apps).
+            *   **SharePoint Sites:** (e.g., Online sites).
+            *   **Licenses:** Software licenses can be included.
+        *   **Workflow:**
+            1.  **Request:** Users (internal or external) request access to the package.
+            2.  **Approval:** The request goes through an approval workflow (e.g., Manager or Project Lead approval).
+            3.  **Provisioning:** Upon approval, the user is automatically given access to all resources in the bundle.
+        *   **Lifecycle & Expiration:**
+            *   Access is **time-bound** (e.g., 30 days).
+            *   **Automatic Revocation:** When the assignment expires, access to all resources is automatically removed. No manual cleanup is required.
+        *   **External User Cleanup:** If a guest user (B2B) has no other access rights in the tenant other than this expired package, their guest account can be automatically removed from the directory.
+    *   **Catalogs:**
+        *   **Purpose:** A container used to group and organize Access Packages.
+        *   **Usage:** You create Access Packages and arrange them into Catalogs (e.g., "Marketing Catalog", "External Partners Catalog").
+
 #### 4.1.2 Create and Manage Access Packages
+
+*   **Scenario:**
+    *   We will create an Access Package that allows users (Students and Teachers) to voluntarily join a specific Security Group ("Team Assignment 1") for a limited duration (60 days) without requiring manual approval.
+*   **Step 1: Create the Resource (Prerequisite)**
+    *   Before creating the package, the resource must exist.
+    *   Navigate to **Groups** > **New group**.
+    *   Create a **Security** group named "Team Assignment 1". Leave members empty.
+*   **Step 2: Create the Access Package**
+    1.  **Navigation:** Go to **Identity Governance** > **Entitlement management** > **Access packages**.
+    2.  **Initiate:** Click **New access package**.
+    3.  **Basics Tab:**
+        *   **Name:** Enter a name (e.g., "Student Assignment Access").
+        *   **Description:** Optional description.
+        *   **Catalog:** Use the default **General Catalog**.
+    4.  **Resource Roles Tab:**
+        *   **Groups and Teams:** Click **Select groups** and choose "Team Assignment 1".
+        *   **Role:** Select **Member** (The permission granted within the group).
+    5.  **Requests Tab:**
+        *   **Users who can request access:** Select **For users in your directory**.
+        *   **Select users and groups:** Choose specific groups allowed to request this (e.g., "Students" and "Teachers").
+        *   **Approval:** Set **Require approval** to **No** (Automatic provisioning).
+        *   **Enable new requests:** Set to **Yes**.
+    6.  **Lifecycle Tab:**
+        *   **Expiration:** Set access to expire after **60 days**.
+        *   **Access Reviews:** Set to **No** (covered in later sections).
+    7.  **Review + Create:** Click **Create**.
+*   **Step 3: The User Experience (My Access Portal)**
+    *   **My Access Link:** On the Access Package overview page, copy the **My Access portal link**.
+    *   **Requesting Access:**
+        1.  The user (Student) navigates to the link.
+        2.  Signs in with their Azure AD credentials.
+        3.  Sees the available package and clicks **Request access**.
+        4.  Enters a **Justification** (e.g., "Need to join the project") and submits.
+    *   **Result:** Since approval is disabled, the status changes to "Delivered" almost immediately.
+*   **Step 4: Verification**
+    *   As an Administrator, navigate back to **Groups** > "Team Assignment 1" > **Members**.
+    *   Verify that the requesting user has been automatically added to the group.
+    *   **Note:** After the 60-day duration, Entitlement Management will automatically remove the user from this group.
+
 #### 4.1.3 Create and Require Terms of Use
-#### 4.1.3 External User Lifecycle Management
+
+*   **Overview:**
+    *   **Purpose:** Organizations often require users to accept legal terms or compliance policies before accessing corporate resources.
+    *   **Mechanism:** This is implemented using **Conditional Access**.
+    *   **Licensing:** Requires **Azure AD Premium P1** or higher.
+*   **Step 1: Define the Terms of Use (ToU)**
+    *   **Navigation:** Go to **Conditional Access** > **Terms of use**.
+    *   **Create New Terms:**
+        *   **Name:** Internal name for the policy.
+        *   **Display Name:** What the user sees.
+        *   **Document:** Upload the PDF containing the legal text.
+        *   **Language:** You can upload multiple PDFs for different languages (English, French, Spanish, etc.).
+        *   **Require users to expand:** If set to **On**, users must scroll to the bottom of the document before the "Accept" button becomes active.
+        *   **Expire consents:**
+            *   **Frequency:** You can force users to re-accept the terms on a schedule (e.g., Annually).
+            *   **Duration:** Set a specific date or frequency (e.g., every 365 days).
+*   **Step 2: Enforce via Conditional Access**
+    *   Creating the Terms of Use document alone does not enforce it; you must link it to a Conditional Access policy.
+    *   **Create Policy:**
+        1.  **Assignments:** Select **All Users** (or specific groups).
+        2.  **Cloud Apps:** Select **All Cloud Apps**.
+        3.  **Grant Controls:**
+            *   Select **Grant access**.
+            *   Check the box corresponding to the **Terms of Use** created in Step 1.
+            *   *Note:* This makes accepting the terms a requirement for the token to be issued.
+*   **User Experience:**
+    *   When a targeted user signs in to an application, the sign-in flow is interrupted.
+    *   A page displays the PDF document.
+    *   The user must view the document and click **Accept**.
+    *   Azure AD records the acceptance (audit trail), and the user is not prompted again until the terms expire or are updated.
+
+#### 4.1.4 External User Lifecycle Management
+
+*   **Overview:**
+    *   **Challenge:** External users (guests) often accumulate in a directory long after their project or contract has ended.
+    *   **Solution:** Entitlement Management can automatically manage the lifecycle of these external users based on their access package assignments.
+*   **Configuration:**
+    *   **Navigation:** Go to **Identity Governance** > **Entitlement management** > **Settings**.
+    *   **Manage the lifecycle of external users:** Click **Edit**.
+*   **Lifecycle Settings:**
+    *   **Trigger:** These settings apply when an external user (who was invited through an access package) loses their **last** assignment to any access package.
+    *   **Block Sign-in:**
+        *   **Setting:** "Block external user from signing in to this directory".
+        *   **Default:** **Yes**.
+        *   **Effect:** If the user has no active packages, their account is disabled, preventing login.
+    *   **Delete User:**
+        *   **Setting:** "Remove external user".
+        *   **Default:** **Yes** (after **30 days**).
+        *   **Effect:** If the user remains blocked and receives no new assignments for the specified duration, the guest account is permanently deleted from the directory.
+    *   **Customization:** You can extend the number of days before deletion or choose not to delete users automatically (e.g., if they need to retain access for historical reasons or other manual assignments).
 
 ### 4.2 Access Reviews
+
+This section focuses on **Access Reviews**, a critical component of Identity Governance. As organizations grow, users often accumulate permissions they no longer need ("permission creep"). Access Reviews allow organizations to efficiently manage group memberships, access to enterprise applications, and role assignments by requiring regular recertification by owners or managers. This ensures that only the right people have continued access to resources.
+
+---
+
 #### 4.2.1 Introduction to Access Reviews
+
+*   **Overview:**
+    *   **Definition:** Access Reviews are an automated service within Microsoft Entra Identity Governance that enables organizations to efficiently manage group memberships, access to enterprise applications, and role assignments.
+    *   **Goal:** To mitigate "permission creep" by ensuring users only retain access to the resources they currently need.
+*   **Navigation:**
+    *   Located in the Azure Portal under **Identity Governance** > **Access reviews**.
+*   **Core Concepts:**
+    *   **The Workflow:**
+        1.  **Scope:** Define what is being reviewed (e.g., Members of the "Sales" group).
+        2.  **Reviewers:** Define who performs the review.
+            *   **Self-Review:** Users review their own access.
+            *   **Manager Review:** Managers review their direct reports' access.
+            *   **Group Owners:** Owners of the group review membership.
+        3.  **Recurrence:** Set the frequency (e.g., Quarterly, Annually).
+    *   **Decision Logic:**
+        *   **Approve:** User retains access.
+        *   **Deny:** User loses access (can be auto-remediated).
+        *   **No Response:** Define a fallback action (e.g., Remove access, Keep access, or Accept recommendations).
+*   **Strategic Implementation:**
+    *   **Balancing Friction:** Security controls often introduce friction (like MFA). Access Reviews add administrative overhead.
+    *   **Cadence:** Choose a frequency that balances security needs with user productivity.
+    *   **Psychology:** If users know they can easily request access again (via Entitlement Management/Access Packages), they are more likely to honestly deny their own unneeded access during a review.
+
 #### 4.2.2 Create Access Reviews
+
+*   **Scenario:**
+    *   Create a review for the "Students" and "Teachers" groups where members must self-attest their need for continued access.
+*   **Step 1: Initiate Review**
+    *   Navigate to **Identity Governance** > **Access reviews**.
+    *   Click **New access review**.
+*   **Step 2: Review Type & Scope**
+    *   **Select what to review:**
+        *   **Teams + Groups:** Reviews membership of Security Groups or M365 Groups.
+        *   **Applications:** Reviews assignment to Enterprise Applications (e.g., Salesforce, Adobe).
+    *   **Review Scope:**
+        *   **Select teams + groups:** Choose specific groups (e.g., "Students", "Teachers").
+    *   **Scope Users:**
+        *   **Guest users only:** Limits review to B2B users.
+        *   **All users:** Includes internal member users as well.
+*   **Step 3: Reviews (Who performs the review?)**
+    *   **Select Reviewers:**
+        *   **Group owners:** The owners of the group perform the review.
+        *   **Selected user(s) or group(s):** Specific auditors.
+        *   **Users review their own access:** (Self-Review) Users are asked if they still need access.
+        *   **Managers of users:** Uses the `Manager` attribute in AD.
+    *   *Decision:* For this demo, we select **Users review their own access**.
+*   **Step 4: Settings (Recurrence & Logic)**
+    *   **Duration (in days):** How long the review remains open (e.g., 3 days).
+    *   **Recurrence:**
+        *   **One time:** A single ad-hoc review.
+        *   **Weekly/Quarterly/Annually:** Recurring compliance checks.
+*   **Step 5: Upon Completion Settings**
+    *   **Auto-apply results to resource:** If enabled, users denied access are automatically removed from the group/app.
+    *   **If reviewers don't respond:** (Fallback action)
+        *   **No change:** Access remains.
+        *   **Remove access:** Strict security posture.
+        *   **Approve access:** Lenient.
+        *   **Take recommendations:** Uses system intelligence.
+    *   **Decision Helpers (Recommendations):**
+        *   **No sign-in within 30 days:** The system recommends "Deny" if the user hasn't used the account recently.
+    *   **Advanced:**
+        *   **Justification required:** User must type why they need access.
+        *   **Email notifications:** Alerts users/admins.
+        *   **Reminders:** Sends follow-up emails if review is pending.
+*   **Step 6: Finalize**
+    *   **Review Name:** Enter a descriptive name (e.g., "Student Teacher Review").
+    *   Click **Create**.
+    *   **Outcome:** Emails are sent to reviewers (or users in self-review) to begin the process.
+
 #### 4.2.3 Perform an Access Review
+
+*   **The Reviewer Experience (User Side):**
+    *   **Notification:** When a review starts, assigned reviewers (or users in a self-review) receive an email notification with a direct link.
+    *   **My Access Portal:** Alternatively, users can navigate directly to **[myaccess.microsoft.com](https://myaccess.microsoft.com)**.
+    *   **Steps to Review:**
+        1.  Log in to the My Access portal.
+        2.  Select **Access reviews** from the left menu.
+        3.  Click on the pending review (e.g., "Student Teacher Review").
+        4.  **Decision:**
+            *   **Approve:** Select **Yes** if access is still required.
+            *   **Deny:** Select **No** if access is no longer needed.
+        5.  **Justification:** Enter a business reason if required (e.g., "Need access for project X until Q4").
+        6.  **Submit:** The decision is recorded.
+*   **The Administrator Experience (Monitoring):**
+    *   **Tracking Progress:**
+        *   Navigate to **Identity Governance** > **Access reviews**.
+        *   Select the active review to view the dashboard.
+        *   **Overview:** Shows the progress bar (e.g., 1 of 3 users reviewed).
+        *   **Results:** Detailed view of each user's status (Approved, Denied, Not Reviewed) and the system's **Recommendation** (based on sign-in activity).
+    *   **Management Actions:**
+        *   **Stop:** Ends the review immediately.
+        *   **Reset:** Restarts the review cycle.
+        *   **Delete:** Removes the review configuration.
+*   **Completion & Remediation:**
+    *   Once the duration expires (e.g., after 3 days), the configured **Upon completion** settings apply.
+    *   **Auto-apply:** If enabled, users who were denied or didn't respond (based on fallback settings) are automatically removed from the group or application.
 #### 4.2.4 Access Review Licensing
 
+*   **License Requirement:**
+    *   Access Reviews require an **Azure AD Premium P2** (or Microsoft Entra ID P2) license.
+*   **Who Needs a License?**
+    *   **Reviewers:** Any user who performs an action in an access review needs a license. This includes:
+        *   **Self-Reviewers:** Users reviewing their own access.
+        *   **Group/App Owners:** Owners reviewing membership or assignment.
+        *   **Managers:** Managers reviewing direct reports.
+*   **Who Does NOT Need a License?**
+    *   **Creators:** The Administrator who creates or manages the review settings does not strictly require a license for that specific action (unless they are also a reviewer).
+*   **External Users (Guests):**
+    *   Guest users performing reviews fall under the **External Identities Monthly Active Users (MAU)** billing model.
+    *   They must be covered by the tenant's P2 allowance.
+
 ### 4.3 Privileged Identity Management (PIM)
+
+This section covers **Privileged Identity Management (PIM)**, a service in Microsoft Entra ID that enables you to manage, control, and monitor access to important resources. PIM helps mitigate the risks of excessive, unnecessary, or misused access rights by enforcing the principle of least privilege through **Just-In-Time (JIT)** access. Instead of having permanent admin rights ("standing access"), users are made "eligible" for a role and must activate it for a specific duration when needed.
+
+---
+
 #### 4.3.1 Introduction to Privileged Identity Management
+
+*   **Overview:**
+    *   **Privileged Identity Management (PIM):** A service that manages, controls, and monitors access to important resources in your organization.
+    *   **Just-In-Time (JIT) Access:** PIM provides time-bound access to resources using JIT. Instead of users having permanent "standing access" (admin rights 24/7), they only have privileges when they need them.
+    *   **Analogy:** Similar to the `sudo` command in Linux. A user operates with standard permissions and only elevates to root/admin privileges for specific tasks.
+*   **Key Capabilities:**
+    *   **Request Access:** Users must actively request to use their role.
+    *   **Justification:** Users can be required to enter a business justification or ticket number.
+    *   **Approval Workflow:** Activation can require approval from a designated manager or admin.
+    *   **Notifications & Auditing:** Admins are notified when roles are activated, and audit logs track all activity.
+    *   **Access Reviews:** Ensure continued need for access (recertification).
+*   **Licensing:**
+    *   Requires **Azure AD Premium P2** (or Microsoft Entra ID P2).
+*   **Navigation:**
+    *   Access via the Azure Portal > **Privileged Identity Management**.
+*   **Implementation Strategy:**
+    1.  **Plan:** Don't turn it on without a plan. Define policies and roles.
+    2.  **Pilot:** Test with a small group of users first.
+    3.  **Communicate:** Educate users on the workflow changes (activating roles vs. having them permanently).
+*   **Assignment Types:**
+    *   **Active Assignment:**
+        *   The user has the role privileges assigned immediately.
+        *   Can be **Permanent** (traditional admin) or **Time-bound** (expires at a specific future date/time).
+    *   **Eligible Assignment:**
+        *   The user does *not* have the privileges by default.
+        *   They are "Eligible" to activate the role.
+        *   **Activation:** Requires the user to perform an action (MFA, justification, approval) to gain the privileges for a limited duration (e.g., 4 hours).
+        *   **Benefit:** Reduces the attack surface. If the account is compromised while not active, the attacker does not have admin rights.
+
 #### 4.3.2 Assigning Roles with PIM
+
+*   **Scope of PIM:**
+    *   PIM is not limited to **Azure AD Roles** (Global Admin, etc.).
+    *   It also manages **Azure Resources** (Subscriptions, Resource Groups, Management Groups) using Azure RBAC roles (e.g., Contributor, Virtual Machine Operator).
+*   **Onboarding Azure Resources:**
+    *   **Discovery:** Before managing resources, PIM must "Discover" them.
+    *   **Navigation:** PIM > **Azure resources** > **Discover resources**.
+    *   **Onboarding:** Select a Subscription and click **Manage resource**.
+    *   **Effect:** This action integrates PIM into the role assignment workflow for that subscription, enabling time-bound and eligible access.
+*   **Assigning a Role (PIM Workflow):**
+    1.  **Select Resource:** Open the managed Subscription in PIM.
+    2.  **Select Role:** Go to **Roles** and choose a specific RBAC role (e.g., **Virtual Machine Operator**).
+    3.  **Add Assignment:** Click **Add assignments**.
+    4.  **Select Member:** Choose the user or group.
+    5.  **Configure Settings:**
+        *   **Assignment Type:**
+            *   **Eligible:** User must activate to use. (Example limit: 1 year eligibility).
+            *   **Active:** User has access immediately but for a limited time (e.g., 6 months).
+        *   **Duration:** Define start and end dates.
+*   **PIM vs. Traditional IAM:**
+    *   **Traditional (IAM blade):** Allows for permanent, standing access without expiration or justification.
+    *   **PIM:** Enforces **Least Privilege** by requiring justification, approval (optional), and enforcing expiration dates on assignments.
+
 #### 4.3.3 Emergency Break Glass Accounts
+*   **Overview:**
+    *   **Purpose:** An emergency access account (often called a "break-glass" account) is a highly privileged account used *only* when normal administrative access is unavailable.
+    *   **Risk Scenario:** You could be locked out of your tenant due to:
+        *   MFA service outages.
+        *   Misconfigured Conditional Access policies (e.g., blocking all IPs).
+        *   PIM approval workflows failing (no eligible approvers).
+*   **Configuration Best Practices:**
+    *   **Cloud-Only:** The account must be created directly in Entra ID (not synced from on-prem) to ensure access if on-premises infrastructure fails. Use the `*.onmicrosoft.com` domain.
+    *   **Role:** Permanently assigned the **Global Administrator** role.
+    *   **Exclusions:**
+        *   **MFA:** Do **not** register for MFA.
+        *   **Conditional Access:** Explicitly **Exclude** this account from *all* Conditional Access policies.
+        *   **PIM:** Do not require PIM activation; the role should be permanent.
+*   **Securing the Account:**
+    *   **Complex Credentials:** Use a very long, complex password (generated randomly).
+    *   **Split Knowledge:** Split the password into two or three parts. Give each part to a different senior administrator or store them in separate physical safes ("Two-man rule").
+    *   **Physical Security:** Store the credentials in a secure, fireproof location.
+*   **Monitoring & Maintenance:**
+    *   **Alerting:** Configure log monitoring to send an immediate high-priority alert (SMS/Email) to the security team whenever this account signs in.
+    *   **Testing:** Validate the account periodically (e.g., every 90 days) to ensure the password works and the account hasn't been blocked.
